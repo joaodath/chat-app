@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["mongoDb"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  username   String    @unique
+  email      String    @unique
+  password   String
+  isLoggedIn Boolean
+  messages   Message[]
+
+  //connecting optional room
+  room          Room?   @relation(fields: [roomConnected], references: [name])
+  roomConnected String?
+}
+
+model Message {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+  createdAt DateTime @updatedAt
+
+  //connecting user owner of the message, no message without owner allowed
+  owner         User   @relation(fields: [ownerUsername], references: [username])
+  ownerUsername String
+
+  //connecting room, no message without room allowed
+  room     Room   @relation(fields: [roomName], references: [name])
+  roomName String
+
+}
+
+model Room {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  messages       Message[]
+  connectedUsers User[]
+}
