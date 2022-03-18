@@ -1,0 +1,26 @@
+version: '3.0'
+services:
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017 
+    volumes:
+      - db:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: chat 
+
+  app:
+    image: node:16
+    depends_on: 
+      - mongo
+    ports: 
+      - 3000:3000
+    volumes: 
+      - .:/app
+    working_dir: /app 
+    command: bash -c "npm i && npm start" 
+    environment: 
+      NODE_ENV: local_docker
+
+volumes:
+  db:
