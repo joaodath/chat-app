@@ -11,12 +11,12 @@ import { userWithoutPasswordDto } from './dto/user-without-password.dto';
 @Injectable()
 export class UserService {
   constructor(private db: PrismaService) {}
-  calculateAge(birthday: Date) {
-    // birthday is a date
-    const ageDifMs = Date.now() - birthday.getTime();
-    const ageDate = new Date(ageDifMs); // miliseconds from epoch
-    return Math.abs(ageDate.getUTCFullYear() - 1970);
-  }
+  // calculateAge(birthday: Date) {
+  //   // birthday is a date
+  //   const ageDifMs = Date.now() - birthday.getTime();
+  //   const ageDate = new Date(ageDifMs); // miliseconds from epoch
+  //   return Math.abs(ageDate.getUTCFullYear() - 1970);
+  // }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const usernameExists = await this.db.user.findUnique({
@@ -39,25 +39,25 @@ export class UserService {
         }
       }
     }
-    const userAge = this.calculateAge(new Date(createUserDto.birthDate));
-    if (userAge < 18) {
-      throw new ConflictException(
-        `User must be at least 18 years old to register`,
-      );
-    }
+    // const userAge = this.calculateAge(new Date(createUserDto.birthDate));
+    // if (userAge < 18) {
+    //   throw new ConflictException(
+    //     `User must be at least 18 years old to register`,
+    //   );
+    // }
 
-    const cpfExists = await this.db.user.findMany({
-      where: { cpf: createUserDto.cpf },
-    });
-    if (cpfExists) {
-      for (const user of cpfExists) {
-        if (user.deleted === false) {
-          throw new ConflictException(
-            `CPF ${createUserDto.cpf} already exists`,
-          );
-        }
-      }
-    }
+    // const cpfExists = await this.db.user.findMany({
+    //   where: { cpf: createUserDto.cpf },
+    // });
+    // if (cpfExists) {
+    //   for (const user of cpfExists) {
+    //     if (user.deleted === false) {
+    //       throw new ConflictException(
+    //         `CPF ${createUserDto.cpf} already exists`,
+    //       );
+    //     }
+    //   }
+    // }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     return await this.db.user.create({
       data: {

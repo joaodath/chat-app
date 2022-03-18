@@ -29,52 +29,52 @@ export class CreateUserDto {
   @IsString()
   password: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @IsUrl()
-  profilePhoto?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // @IsUrl()
+  // profilePhoto?: string;
 
-  @ApiProperty()
-  @IsDateString()
-  birthDate: Date | string;
+  // @ApiProperty()
+  // @IsDateString()
+  // birthDate: Date | string;
 
-  @ApiProperty()
-  @IsString()
-  cpf: string;
+  // @ApiProperty()
+  // @IsString()
+  // cpf: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  cep?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // cep?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  country?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // country?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  state?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // state?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  city?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // city?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  neighborhood?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // neighborhood?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  address?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // address?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  phonenumber?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // phonenumber?: string;
 }
