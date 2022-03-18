@@ -1,0 +1,9 @@
+#Environment Variables Model
+
+#JWT
+JWT_SECRET="secret"
+
+JWT_EXPIRES_IN="604800s"
+
+#Running Port
+PORT=8001
