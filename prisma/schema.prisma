@@ -15,10 +15,13 @@ model User {
   id         String    @id @default(auto()) @map("_id") @db.ObjectId
   name       String
   username   String    @unique
-  email      String    @unique
-  password   String
-  isLoggedIn Boolean
+  email      String    
+  password   String?
+  isLoggedIn Boolean?
   messages   Message[]
+  deleted    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt()
 
   //connecting optional room
   room          Room?   @relation(fields: [roomConnected], references: [name])
