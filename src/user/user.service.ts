@@ -11,22 +11,16 @@ import { userWithoutPasswordDto } from './dto/user-without-password.dto';
 @Injectable()
 export class UserService {
   constructor(private db: PrismaService) {}
-  // calculateAge(birthday: Date) {
-  //   // birthday is a date
-  //   const ageDifMs = Date.now() - birthday.getTime();
-  //   const ageDate = new Date(ageDifMs); // miliseconds from epoch
-  //   return Math.abs(ageDate.getUTCFullYear() - 1970);
-  // }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const usernameExists = await this.db.user.findUnique({
-      where: { username: createUserDto.username },
-    });
+  //This create function will not return the user's password hash.
+  async create(createUserDto: CreateUserDto): Promise<userWithoutPasswordDto> {
+    const usernameExists = await this.findByUsername(createUserDto.username);
     if (usernameExists) {
       throw new ConflictException(
         `Username ${createUserDto.username} already exists`,
       );
     }
+    //This will check if the email is already registered in the database. Soft deleted users are not considered.
     const emailExists = await this.db.user.findMany({
       where: { email: createUserDto.email },
     });
@@ -39,45 +33,39 @@ export class UserService {
         }
       }
     }
-    // const userAge = this.calculateAge(new Date(createUserDto.birthDate));
-    // if (userAge < 18) {
-    //   throw new ConflictException(
-    //     `User must be at least 18 years old to register`,
-    //   );
-    // }
 
-    // const cpfExists = await this.db.user.findMany({
-    //   where: { cpf: createUserDto.cpf },
-    // });
-    // if (cpfExists) {
-    //   for (const user of cpfExists) {
-    //     if (user.deleted === false) {
-    //       throw new ConflictException(
-    //         `CPF ${createUserDto.cpf} already exists`,
-    //       );
-    //     }
-    //   }
-    // }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    return await this.db.user.create({
+    const newUser = await this.db.user.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
       },
     });
+
+    const { password, ...userWithoutPassword } = newUser;
+    return userWithoutPassword;
   }
 
-  async findAll(): Promise<User[]> {
+  //This findAll function will not return the users password hash. :)
+  async findAll(): Promise<userWithoutPasswordDto[]> {
+    const users = await this.db.user.findMany();
+    const usersWithoutPassword: userWithoutPasswordDto[] = [];
+
+    for (const user of users) {
+      const { password, ...userWithoutPassword } = user;
+      usersWithoutPassword.push(userWithoutPassword);
+    }
     return await this.db.user.findMany();
   }
 
-  // async findUnique(id: number): Promise<User> {
-  //   const user = await this.db.user.findUnique({ where: { id } });
-  //   if (!user) {
-  //     throw new NotFoundException();
-  //   }
-  //   return user;
-  // }
+  async findUnique(id: string): Promise<userWithoutPasswordDto> {
+    const user = await this.db.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException();
+    }
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
 
   async findByUsername(username: string): Promise<userWithoutPasswordDto> {
     const user = await this.db.user.findUnique({
@@ -90,6 +78,7 @@ export class UserService {
     return userWithoutPassword;
   }
 
+  //INTERNAL USE ONLY: This find function WILL return the user's password hash so JWT can compare and allow login. DO NOT, FOR THE SAKE OF YOUR SOUL, USE THIS FUNCTION TO FIND USERS IN OTHER CONTEXTS.
   async findByUsernameJWT(username: string): Promise<User> {
     const user = this.db.user.findUnique({ where: { username: username } });
     return user;
@@ -98,35 +87,31 @@ export class UserService {
   async update(
     username: string,
     updateUserDto: Prisma.UserUpdateInput,
-  ): Promise<User> {
+  ): Promise<userWithoutPasswordDto> {
     const user = await this.db.user.findUnique({
       where: { username: username },
     });
     if (!user) {
       throw new NotFoundException();
     } else {
-      const { cpf, ...userWithoutCPF } = updateUserDto;
-      return await this.db.user.update({
+      const { isLoggedIn, messages, createdAt, updatedAt, ...userSafeData } =
+        updateUserDto;
+      const { password, ...userWithoutPassword } = await this.db.user.update({
         where: { username: username },
-        data: userWithoutCPF,
+        data: userSafeData,
       });
+
+      return userWithoutPassword;
     }
   }
 
-  async remove(username: string): Promise<User> {
-    return await this.db.user.delete({ where: { username: username } });
-  }
-
-  async softDelete(username: string): Promise<User> {
+  //This can be used to soft delete a user, removing their password and other sensitive data. It also marks the user as deleted, so JWT won't be able to login with it.
+  async softDelete(username: string): Promise<userWithoutPasswordDto> {
     const user = await this.db.user.findUnique({
       where: { username: username },
     });
 
-    user.email = 'user deleted';
-    user.password = 'user deleted';
-    user.profilePhoto = 'user deleted';
-    user.phonenumber = 'user deleted';
-    user.active = false;
+    user.password = '';
     user.deleted = true;
 
     await this.db.user.update({
@@ -134,41 +119,16 @@ export class UserService {
       data: user,
     });
 
-    return await this.db.user.findUnique({
-      where: { username: username },
-      include: {
-        booksBought: true,
-        shoppingCart: true,
-        shoppingHistory: true,
-      },
-    });
+    const { isLoggedIn, messages, createdAt, updatedAt, ...userSafeData } =
+      await this.findByUsername(username);
+
+    return userSafeData;
   }
 
-  async enable(username: string): Promise<User> {
-    const user = await this.db.user.findUnique({
-      where: { username: username },
-    });
-    if (user.deleted === false) {
-      return await this.db.user.update({
-        where: { username: username },
-        data: { active: true },
-      });
-    } else {
-      throw new NotFoundException();
-    }
-  }
-
-  async disable(username: string): Promise<User> {
-    const user = await this.db.user.findUnique({
-      where: { username: username },
-    });
-    if (user.deleted === false) {
-      return await this.db.user.update({
-        where: { username: username },
-        data: { active: false },
-      });
-    } else {
-      throw new NotFoundException();
-    }
+  //This will hard delete a user. Making impossible to recover data about them if needed. Messages will be orphaned. This is a very dangerous operation, use with caution!
+  async hardDelete(username: string): Promise<userWithoutPasswordDto> {
+    const { password, isLoggedIn, createdAt, updatedAt, ...userSafeData } =
+      await this.db.user.delete({ where: { username: username } });
+    return userSafeData;
   }
 }
