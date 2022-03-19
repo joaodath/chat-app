@@ -13,7 +13,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { Prisma, User } from '.prisma/client';
+import { Prisma } from '.prisma/client';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { userWithoutPasswordDto } from './dto/user-without-password.dto';
 import { ApiTags, ApiHeader, ApiResponse, ApiOperation } from '@nestjs/swagger';
@@ -35,7 +35,7 @@ export class UserController {
   async create(
     @Request() req,
     @Body() createUserDto: CreateUserDto,
-  ): Promise<User> {
+  ): Promise<userWithoutPasswordDto> {
     if (req.headers.authorization) {
       throw new ConflictException();
     } else {
@@ -48,7 +48,7 @@ export class UserController {
   @ApiOperation({ summary: 'Encontrar todos os usuários' })
   @Get('all')
   @UsePipes(ValidationPipe)
-  async findAll(): Promise<User[]> {
+  async findAll(): Promise<userWithoutPasswordDto[]> {
     return await this.userService.findAll();
   }
 
@@ -56,26 +56,17 @@ export class UserController {
     name: 'Authorization',
     description: 'JWT Token',
   })
-  @ApiResponse({ status: 404, description: 'Não encontrado.' })
-  @ApiResponse({ status: 200, description: 'Tudo certo' })
-  @ApiOperation({ summary: 'Buscar na rota base do controller' })
-  @Get()
+  @ApiResponse({ status: 404, description: 'User not found!' })
+  @ApiResponse({ status: 200, description: 'User found!' })
+  @ApiOperation({
+    summary:
+      'Search for users using their username. The route is protected by JWT auth',
+  })
+  @Get('username/:username')
   @UseGuards(JwtAuthGuard)
   @UsePipes(ValidationPipe)
   async findByUsername(@Request() req): Promise<userWithoutPasswordDto> {
     return await this.userService.findByUsername(req.user.username);
-  }
-
-  @ApiResponse({ status: 404, description: 'Não encontrado.' })
-  @ApiResponse({ status: 200, description: 'Tudo certo' })
-  @ApiOperation({ summary: 'Encontrar um usuário por USERNAME' })
-  @Get('username/:username')
-  // @UseGuards(JwtAuthGuard)
-  @UsePipes(ValidationPipe)
-  async findByUsernameAdm(
-    @Param('username') username: string,
-  ): Promise<userWithoutPasswordDto> {
-    return await this.userService.findByUsername(username);
   }
 
   @ApiHeader({
@@ -91,22 +82,8 @@ export class UserController {
   async update(
     @Request() req,
     @Body() updateUserDto: Prisma.UserUpdateInput,
-  ): Promise<User> {
+  ): Promise<userWithoutPasswordDto> {
     return await this.userService.update(req.user.username, updateUserDto);
-  }
-
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT Token',
-  })
-  @ApiResponse({ status: 404, description: 'Não encontrado.' })
-  @ApiResponse({ status: 200, description: 'Tudo certo' })
-  @ApiOperation({ summary: 'Desativar Usuário' })
-  @Patch('disable')
-  @UseGuards(JwtAuthGuard)
-  @UsePipes(ValidationPipe)
-  async disable(@Request() req): Promise<User> {
-    return await this.userService.disable(req.user.username);
   }
 
   @ApiHeader({
@@ -119,7 +96,7 @@ export class UserController {
   @Patch('softdelete')
   @UseGuards(JwtAuthGuard)
   @UsePipes(ValidationPipe)
-  async softDelete(@Request() req): Promise<User> {
+  async softDelete(@Request() req): Promise<userWithoutPasswordDto> {
     return await this.userService.softDelete(req.user.username);
   }
 
@@ -128,7 +105,9 @@ export class UserController {
   @ApiOperation({ summary: 'Hard Delete de Usuário' })
   @Delete('del/:username')
   @UsePipes(ValidationPipe)
-  async remove(@Param('username') username: string): Promise<User> {
-    return await this.userService.remove(username);
+  async remove(
+    @Param('username') username: string,
+  ): Promise<userWithoutPasswordDto> {
+    return await this.userService.hardDelete(username);
   }
 }
